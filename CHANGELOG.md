@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-06
+
 ### Added
 - `tb init` — interactive first-time setup for issuer info and invoice defaults
 - `tb client add/list/delete` — client management with interactive prompts and `--force` delete
