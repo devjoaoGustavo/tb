@@ -8,7 +8,24 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -timeout 120s ./...
+
   release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +64,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Test
-        if: steps.check.outputs.skip == 'false'
-        run: go test -race -timeout 120s ./...
-
       - name: Build binaries
         if: steps.check.outputs.skip == 'false'
         run: make dist
@@ -72,7 +85,6 @@ jobs:
       - name: Update CHANGELOG.md
         if: steps.check.outputs.skip == 'false'
         run: |
-          # Move [Unreleased] content to a versioned section and leave [Unreleased] empty.
           python3 -c "
           import sys
           from datetime import date
