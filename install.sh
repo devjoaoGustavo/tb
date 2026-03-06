@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="joaogustavo/tb"
+REPO="devjoaoGustavo/tb"
 BINARY="tb"
 INSTALL_DIR="/usr/local/bin"
 

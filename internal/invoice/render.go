@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 // InvoiceData is the view model passed to the HTML template.

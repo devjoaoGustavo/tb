@@ -1,4 +1,4 @@
-module github.com/joaogustavo/tb
+module github.com/devjoaoGustavo/tb
 
 go 1.24.0
 

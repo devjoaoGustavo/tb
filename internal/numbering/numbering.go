@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/config"
+	"github.com/devjoaoGustavo/tb/internal/config"
 )
 
 // NextNumber generates the next invoice number string and advances the counter.

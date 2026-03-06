@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/config"
-	"github.com/joaogustavo/tb/internal/invoice"
-	"github.com/joaogustavo/tb/internal/model"
-	"github.com/joaogustavo/tb/internal/numbering"
+	"github.com/devjoaoGustavo/tb/internal/config"
+	"github.com/devjoaoGustavo/tb/internal/invoice"
+	"github.com/devjoaoGustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/numbering"
 )
 
 func main() {

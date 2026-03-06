@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 func TestDefaultConfig(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 var fixedTime = time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)

@@ -6,13 +6,13 @@ All data is stored locally — no accounts, no cloud, no subscriptions.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/joaogustavo/tb/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/devjoaoGustavo/tb/main/install.sh | sh
 ```
 
 Or pin a specific version:
 
 ```sh
-VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/joaogustavo/tb/main/install.sh | sh
+VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/devjoaoGustavo/tb/main/install.sh | sh
 ```
 
 Requires `curl` or `wget`. Installs to `/usr/local/bin/tb` (uses `sudo` if needed).
@@ -183,7 +183,7 @@ Data is stored at `~/.local/share/tb/`:
 **Requirements:** Go 1.22+
 
 ```sh
-git clone https://github.com/joaogustavo/tb
+git clone https://github.com/devjoaoGustavo/tb
 cd tb
 go build ./...        # verify everything compiles
 go test ./...         # run tests

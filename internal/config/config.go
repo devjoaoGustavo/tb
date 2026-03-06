@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/config"
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/config"
+	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 func TestNextNumber_Default(t *testing.T) {

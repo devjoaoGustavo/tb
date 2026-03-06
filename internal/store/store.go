@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaogustavo/tb/internal/model"
+	"github.com/devjoaoGustavo/tb/internal/model"
 	_ "modernc.org/sqlite"
 )
 

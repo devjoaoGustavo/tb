@@ -3,7 +3,7 @@
 ## Development setup
 
 ```sh
-git clone https://github.com/joaogustavo/tb
+git clone https://github.com/devjoaoGustavo/tb
 cd tb
 go build ./...   # must compile cleanly before you start
 go test ./...    # must pass

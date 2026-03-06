@@ -1,5 +1,5 @@
 BINARY  = tb
-REPO    = joaogustavo/tb
+REPO    = devjoaoGustavo/tb
 VERSION ?= $(shell git describe --tags --exact-match 2>/dev/null || ([ -f VERSION ] && echo "v$$(cat VERSION)") || echo "dev")
 LDFLAGS = -ldflags "-X main.version=$(VERSION) -s -w"
 
