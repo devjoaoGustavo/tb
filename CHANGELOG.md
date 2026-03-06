@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Simple dashboard with active job and other useful information
+
 ## [0.1.1] - 2026-03-06
 
 ### Added

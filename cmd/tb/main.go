@@ -1448,9 +1448,139 @@ func runInvoiceCreate(cmd *cobra.Command, preview bool) error {
 func newDashboardCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "dashboard",
-		Short: "Interactive TUI dashboard",
+		Short: "Show a summary dashboard",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("dashboard is not yet implemented")
+			st, _, _, err := openStore()
+			if err != nil {
+				return err
+			}
+			defer st.Close()
+
+			now := time.Now()
+
+			// Active session
+			active, err := st.ActiveSession()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("=== DASHBOARD  %s ===\n\n", now.Format("2006-01-02 15:04"))
+
+			if active != nil {
+				fmt.Printf("ACTIVE SESSION\n")
+				fmt.Printf("  %s  started %s  elapsed %.0fm\n\n",
+					active.ProjectID,
+					active.Start.Format("15:04"),
+					active.Duration().Minutes(),
+				)
+			} else {
+				fmt.Println("No active session.")
+			fmt.Println()
+			}
+
+			// Today's totals
+			startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+			todaySessions, err := st.ListSessions("", startOfDay, now)
+			if err != nil {
+				return err
+			}
+			var todayHours float64
+			for _, s := range todaySessions {
+				todayHours += s.Hours()
+			}
+			fmt.Printf("TODAY  %.2fh across %d session(s)\n\n", todayHours, len(todaySessions))
+
+			// This week's totals
+			weekday := int(now.Weekday())
+			if weekday == 0 {
+				weekday = 7
+			}
+			startOfWeek := now.AddDate(0, 0, -(weekday - 1))
+			startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
+			weekSessions, err := st.ListSessions("", startOfWeek, now)
+			if err != nil {
+				return err
+			}
+
+			type projectStats struct {
+				hours         float64
+				unbilledHours float64
+				rate          float64
+				fixedAmount   float64
+				billingType   model.BillingType
+				currency      model.Currency
+				clientID      string
+			}
+			byProject := map[string]*projectStats{}
+			for _, s := range weekSessions {
+				ps, ok := byProject[s.ProjectID]
+				if !ok {
+					proj, err := st.GetProjectByID(s.ProjectID)
+					if err != nil {
+						continue
+					}
+					ps = &projectStats{
+						rate:        proj.HourlyRate,
+						fixedAmount: proj.FixedAmount,
+						billingType: proj.BillingType,
+						currency:    proj.Currency,
+						clientID:    proj.ClientID,
+					}
+					byProject[s.ProjectID] = ps
+				}
+				ps.hours += s.Hours()
+				if !s.Billed {
+					ps.unbilledHours += s.Hours()
+				}
+			}
+
+			fmt.Printf("THIS WEEK  (%s — %s)\n", startOfWeek.Format("Mon 2006-01-02"), now.Format("Mon 2006-01-02"))
+			if len(byProject) == 0 {
+				fmt.Println("  No sessions this week.")
+			} else {
+				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+				fmt.Fprintln(w, "  PROJECT\tCLIENT\tHOURS\tUNBILLED\tESTIMATED")
+				for projectID, ps := range byProject {
+					var estimated float64
+					if ps.billingType == model.BillingHourly {
+						estimated = ps.unbilledHours * ps.rate
+					} else {
+						estimated = ps.fixedAmount
+					}
+					fmt.Fprintf(w, "  %s\t%s\t%.2fh\t%.2fh\t%.2f %s\n",
+						projectID, ps.clientID, ps.hours, ps.unbilledHours, estimated, string(ps.currency))
+				}
+				w.Flush()
+			}
+			fmt.Println()
+
+			// Outstanding invoices
+			sentInvoices, err := st.ListInvoices(string(model.InvoiceSent))
+			if err != nil {
+				return err
+			}
+			fmt.Println("OUTSTANDING INVOICES")
+			if len(sentInvoices) == 0 {
+				fmt.Println("  None.")
+			} else {
+				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+				fmt.Fprintln(w, "  NUMBER\tCLIENT\tAMOUNT\tDUE\tSTATUS")
+				for _, inv := range sentInvoices {
+					status := "sent"
+					if !inv.DueAt.IsZero() && now.After(inv.DueAt) {
+						status = "OVERDUE"
+					}
+					dueStr := ""
+					if !inv.DueAt.IsZero() {
+						dueStr = inv.DueAt.Format("2006-01-02")
+					}
+					fmt.Fprintf(w, "  %s\t%s\t%.2f %s\t%s\t%s\n",
+						inv.Number, inv.ClientID, inv.Total, string(inv.Currency), dueStr, status)
+				}
+				w.Flush()
+			}
+
+			return nil
 		},
 	}
 }
