@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-11
+
+### Added
+
+- **Multi-language invoice support** — invoices can now be rendered in 5 locales: `en`, `es`, `it`, `pt-BR`, `pt`
+- New `internal/i18n` package with locale-aware money formatting (e.g., `R$ 5.700,00` for pt-BR, `$ 5,700.00` for en) and date formatting
+- All invoice HTML labels are now localized: headers, table columns, totals, footer messages, and status badges
+- Locale is configured via the `locale` field in `config.json` (defaults to `pt-BR`)
+
+### Changed
+
+- **Beautiful TUI output** — all CLI list/show/dashboard commands now use styled lipgloss tables with borders and colored headers
+- Colored status badges in invoice list: `● Draft` (gray), `● Sent` (amber), `● Paid` (green)
+- Success/action indicators: `✓` for completions, `▶` for timer start, `■` for timer stop
+- Dashboard sections use styled headers with visual separators
+- Invoice show uses styled key-value pairs
+
+### Dependencies
+
+- Added `github.com/charmbracelet/lipgloss` for terminal styling and table rendering
+
 ## [0.2.0] - 2026-03-06
 
 ### Added
