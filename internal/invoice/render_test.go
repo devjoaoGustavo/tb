@@ -106,7 +106,7 @@ func TestRender_Hourly(t *testing.T) {
 	inv, project, client, issuer := makeTestData()
 
 	var buf bytes.Buffer
-	if err := Render(&buf, inv, project, client, issuer); err != nil {
+	if err := Render(&buf, inv, project, client, issuer, "en"); err != nil {
 		t.Fatalf("Render: %v", err)
 	}
 
@@ -140,7 +140,7 @@ func TestRender_Fixed(t *testing.T) {
 	inv.Total = 5000.0
 
 	var buf bytes.Buffer
-	if err := Render(&buf, inv, project, client, issuer); err != nil {
+	if err := Render(&buf, inv, project, client, issuer, "en"); err != nil {
 		t.Fatalf("Render: %v", err)
 	}
 
@@ -164,7 +164,7 @@ func TestRenderToFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "invoices", "2026", "invoice.html")
 
-	if err := RenderToFile(path, inv, project, client, issuer); err != nil {
+	if err := RenderToFile(path, inv, project, client, issuer, "en"); err != nil {
 		t.Fatalf("RenderToFile: %v", err)
 	}
 

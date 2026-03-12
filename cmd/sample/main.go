@@ -107,7 +107,7 @@ func generateHourly(cfg *config.Config, state *config.State) {
 	}
 	f, _ := os.Create("invoice-hourly.html")
 	defer f.Close()
-	invoice.Render(f, inv, project, client, cfg.Issuer)
+	invoice.Render(f, inv, project, client, cfg.Issuer, cfg.Locale)
 	fmt.Printf("Generated invoice-hourly.html  [%s]\n", invNumber)
 }
 
@@ -149,6 +149,6 @@ func generateFixed(cfg *config.Config, state *config.State) {
 	}
 	f, _ := os.Create("invoice-fixed.html")
 	defer f.Close()
-	invoice.Render(f, inv, project, client, cfg.Issuer)
+	invoice.Render(f, inv, project, client, cfg.Issuer, cfg.Locale)
 	fmt.Printf("Generated invoice-fixed.html   [%s]\n", invNumber)
 }

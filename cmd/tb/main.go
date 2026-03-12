@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"text/tabwriter"
 	"time"
 	"unicode"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/devjoaoGustavo/tb/internal/model"
 	"github.com/devjoaoGustavo/tb/internal/numbering"
 	"github.com/devjoaoGustavo/tb/internal/store"
+	"github.com/devjoaoGustavo/tb/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -375,7 +375,7 @@ func newClientCmd() *cobra.Command {
 			if err := st.CreateClient(c); err != nil {
 				return err
 			}
-			fmt.Printf("Client %q added (id: %s)\n", c.Name, c.ID)
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Client %q added (id: %s)", c.Name, c.ID))
 			return nil
 		},
 	}
@@ -404,12 +404,12 @@ func newClientCmd() *cobra.Command {
 				return nil
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tNAME\tCOMPANY\tEMAIL")
+			var rows [][]string
 			for _, c := range clients {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", c.ID, c.Name, c.Company, c.Email)
+				rows = append(rows, []string{c.ID, c.Name, c.Company, c.Email})
 			}
-			return w.Flush()
+			fmt.Println(ui.RenderTable([]string{"ID", "NAME", "COMPANY", "EMAIL"}, rows))
+			return nil
 		},
 	}
 
@@ -442,7 +442,7 @@ func newClientCmd() *cobra.Command {
 			if err := st.DeleteClient(id); err != nil {
 				return err
 			}
-			fmt.Printf("Client %q deleted.\n", c.Name)
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Client %q deleted.", c.Name))
 			return nil
 		},
 	}
@@ -497,7 +497,7 @@ func newProjectCmd() *cobra.Command {
 			if err := st.CreateProject(p); err != nil {
 				return err
 			}
-			fmt.Printf("Project %q added (id: %s)\n", p.Name, p.ID)
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Project %q added (id: %s)", p.Name, p.ID))
 			return nil
 		},
 	}
@@ -528,8 +528,7 @@ func newProjectCmd() *cobra.Command {
 				return nil
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tNAME\tCLIENT\tTYPE\tRATE\tCURRENCY\tACTIVE")
+			var rows [][]string
 			for _, p := range projects {
 				rate := "-"
 				if p.BillingType == model.BillingHourly {
@@ -541,10 +540,12 @@ func newProjectCmd() *cobra.Command {
 				if !p.Active {
 					active = "no"
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-					p.ID, p.Name, p.ClientID, string(p.BillingType), rate, string(p.Currency), active)
+				rows = append(rows, []string{
+					p.ID, p.Name, p.ClientID, string(p.BillingType), rate, string(p.Currency), active,
+				})
 			}
-			return w.Flush()
+			fmt.Println(ui.RenderTable([]string{"ID", "NAME", "CLIENT", "TYPE", "RATE", "CURRENCY", "ACTIVE"}, rows))
+			return nil
 		},
 	}
 	list.Flags().String("client", "", "filter by client slug")
@@ -579,7 +580,7 @@ func newProjectCmd() *cobra.Command {
 			if err := st.DeleteProject(id); err != nil {
 				return err
 			}
-			fmt.Printf("Project %q deleted.\n", p.Name)
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Project %q deleted.", p.Name))
 			return nil
 		},
 	}
@@ -632,7 +633,7 @@ func newStartCmd() *cobra.Command {
 			if err := st.CreateSession(sess); err != nil {
 				return err
 			}
-			fmt.Printf("Timer started for %q at %s\n", projectID, startTime.Format("15:04"))
+			fmt.Println(ui.Success.Render("▶") + fmt.Sprintf(" Timer started for %s at %s", ui.Keyword.Render(projectID), startTime.Format("15:04")))
 			return nil
 		},
 	}
@@ -673,7 +674,7 @@ func stopActive(st *store.Store, note string) error {
 		return err
 	}
 	dur := active.Duration()
-	fmt.Printf("Stopped %q — %.2f hours (%.0f min)\n", active.ProjectID, dur.Hours(), dur.Minutes())
+	fmt.Println(ui.Warning.Render("■") + fmt.Sprintf(" Stopped %s — %.2f hours (%.0f min)", ui.Keyword.Render(active.ProjectID), dur.Hours(), dur.Minutes()))
 	return nil
 }
 
@@ -707,7 +708,7 @@ func newSwitchCmd() *cobra.Command {
 			if err := st.CreateSession(sess); err != nil {
 				return err
 			}
-			fmt.Printf("Switched to %q\n", projectID)
+			fmt.Println(ui.Success.Render("▶") + fmt.Sprintf(" Switched to %s", ui.Keyword.Render(projectID)))
 			return nil
 		},
 	}
@@ -736,11 +737,7 @@ func newNowCmd() *cobra.Command {
 			}
 
 			dur := active.Duration()
-			fmt.Printf("Running: %s  (started %s, elapsed %.0fm)\n",
-				active.ProjectID,
-				active.Start.Format("15:04"),
-				dur.Minutes(),
-			)
+			fmt.Printf("%s %s  (started %s, elapsed %.0fm)\n", ui.Success.Render("▶"), ui.Keyword.Render(active.ProjectID), active.Start.Format("15:04"), dur.Minutes())
 
 			now := time.Now()
 			startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -802,7 +799,7 @@ func newLogCmd() *cobra.Command {
 			if err := st.CreateSession(sess); err != nil {
 				return err
 			}
-			fmt.Printf("Logged %.2fh for %q\n", dur.Hours(), projectID)
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Logged %.2fh for %s", dur.Hours(), ui.Keyword.Render(projectID)))
 			return nil
 		},
 	}
@@ -829,7 +826,7 @@ func newCancelCmd() *cobra.Command {
 			if err := st.DeleteSession(active.ID); err != nil {
 				return err
 			}
-			fmt.Printf("Cancelled session for %q\n", active.ProjectID)
+			fmt.Println(ui.Warning.Render("✗") + fmt.Sprintf(" Cancelled session for %s", ui.Keyword.Render(active.ProjectID)))
 			return nil
 		},
 	}
@@ -882,8 +879,7 @@ func newReportCmd() *cobra.Command {
 				byProject[s.ProjectID] += s.Hours()
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "PROJECT\tCLIENT\tHOURS\tEARNINGS\tPERIOD")
+			var rows [][]string
 			for projectID, hours := range byProject {
 				proj, err := st.GetProjectByID(projectID)
 				if err != nil {
@@ -899,10 +895,13 @@ func newReportCmd() *cobra.Command {
 				if !from.IsZero() && !to.IsZero() {
 					period = fmt.Sprintf("%s — %s", from.Format("2006-01-02"), to.Format("2006-01-02"))
 				}
-				fmt.Fprintf(w, "%s\t%s\t%.2f\t%.2f %s\t%s\n",
-					proj.ID, proj.ClientID, hours, earnings, string(proj.Currency), period)
+				rows = append(rows, []string{
+					proj.ID, proj.ClientID, fmt.Sprintf("%.2f", hours),
+					fmt.Sprintf("%.2f %s", earnings, string(proj.Currency)), period,
+				})
 			}
-			return w.Flush()
+			fmt.Println(ui.RenderTable([]string{"PROJECT", "CLIENT", "HOURS", "EARNINGS", "PERIOD"}, rows))
+			return nil
 		},
 	}
 	cmd.Flags().Bool("week", false, "show this week")
@@ -1014,8 +1013,7 @@ func newInvoiceCmd() *cobra.Command {
 				return nil
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "NUMBER\tCLIENT\tSTATUS\tTOTAL\tISSUED\tDUE")
+			var rows [][]string
 			for _, inv := range invoices {
 				issued := "-"
 				if !inv.IssuedAt.IsZero() {
@@ -1025,11 +1023,13 @@ func newInvoiceCmd() *cobra.Command {
 				if !inv.DueAt.IsZero() {
 					due = inv.DueAt.Format("2006-01-02")
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%.2f %s\t%s\t%s\n",
-					inv.Number, inv.ClientID, string(inv.Status),
-					inv.Total, string(inv.Currency), issued, due)
+				rows = append(rows, []string{
+					inv.Number, inv.ClientID, ui.StatusBadge(string(inv.Status)),
+					fmt.Sprintf("%.2f %s", inv.Total, string(inv.Currency)), issued, due,
+				})
 			}
-			return w.Flush()
+			fmt.Println(ui.RenderTable([]string{"NUMBER", "CLIENT", "STATUS", "TOTAL", "ISSUED", "DUE"}, rows))
+			return nil
 		},
 	}
 	list.Flags().String("status", "", "filter by status: draft, sent, paid")
@@ -1051,41 +1051,45 @@ func newInvoiceCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Invoice:  %s\n", inv.Number)
-			fmt.Printf("Status:   %s\n", inv.Status)
-			fmt.Printf("Client:   %s\n", inv.ClientID)
-			fmt.Printf("Project:  %s\n", inv.ProjectID)
+			fmt.Println(ui.KeyValue("Invoice", inv.Number))
+			fmt.Println(ui.KeyValue("Status", ui.StatusBadge(string(inv.Status))))
+			fmt.Println(ui.KeyValue("Client", inv.ClientID))
+			fmt.Println(ui.KeyValue("Project", inv.ProjectID))
 			if !inv.IssuedAt.IsZero() {
-				fmt.Printf("Issued:   %s\n", inv.IssuedAt.Format("2006-01-02"))
+				fmt.Println(ui.KeyValue("Issued", inv.IssuedAt.Format("2006-01-02")))
 			}
 			if !inv.DueAt.IsZero() {
-				fmt.Printf("Due:      %s\n", inv.DueAt.Format("2006-01-02"))
+				fmt.Println(ui.KeyValue("Due", inv.DueAt.Format("2006-01-02")))
 			}
 			if !inv.PaidAt.IsZero() {
-				fmt.Printf("Paid:     %s\n", inv.PaidAt.Format("2006-01-02"))
+				fmt.Println(ui.KeyValue("Paid", inv.PaidAt.Format("2006-01-02")))
 			}
 			if !inv.PeriodStart.IsZero() {
-				fmt.Printf("Period:   %s — %s\n",
+				fmt.Println(ui.KeyValue("Period", fmt.Sprintf("%s — %s",
 					inv.PeriodStart.Format("2006-01-02"),
-					inv.PeriodEnd.Format("2006-01-02"))
+					inv.PeriodEnd.Format("2006-01-02"))))
 			}
 			fmt.Println()
 
 			sym := invoice.CurrencySymbol(inv.Currency)
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 			if inv.BillingType == model.BillingHourly {
-				fmt.Fprintln(w, "DATE\tDESCRIPTION\tHOURS\tRATE\tAMOUNT")
+				var rows [][]string
 				for _, li := range inv.LineItems {
-					fmt.Fprintf(w, "%s\t%s\t%.2f\t%s %.2f\t%s %.2f\n",
-						li.Date, li.Description, li.Hours, sym, li.Rate, sym, li.Amount)
+					rows = append(rows, []string{
+						li.Date, li.Description,
+						fmt.Sprintf("%.2f", li.Hours),
+						fmt.Sprintf("%s %.2f", sym, li.Rate),
+						fmt.Sprintf("%s %.2f", sym, li.Amount),
+					})
 				}
+				fmt.Println(ui.RenderTable([]string{"DATE", "DESCRIPTION", "HOURS", "RATE", "AMOUNT"}, rows))
 			} else {
-				fmt.Fprintln(w, "DESCRIPTION\tAMOUNT")
+				var rows [][]string
 				for _, li := range inv.LineItems {
-					fmt.Fprintf(w, "%s\t%s %.2f\n", li.Description, sym, li.Amount)
+					rows = append(rows, []string{li.Description, fmt.Sprintf("%s %.2f", sym, li.Amount)})
 				}
+				fmt.Println(ui.RenderTable([]string{"DESCRIPTION", "AMOUNT"}, rows))
 			}
-			w.Flush()
 
 			fmt.Println()
 			fmt.Printf("Subtotal: %s %.2f\n", sym, inv.Subtotal)
@@ -1115,7 +1119,7 @@ func newInvoiceCmd() *cobra.Command {
 			if err := st.UpdateInvoiceStatus(args[0], model.InvoiceSent, time.Time{}); err != nil {
 				return err
 			}
-			fmt.Printf("Invoice %s marked as sent\n", args[0])
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Invoice %s marked as sent", ui.Keyword.Render(args[0])))
 			return nil
 		},
 	}
@@ -1144,7 +1148,7 @@ func newInvoiceCmd() *cobra.Command {
 			if err := st.UpdateInvoiceStatus(args[0], model.InvoicePaid, paidAt); err != nil {
 				return err
 			}
-			fmt.Printf("Invoice %s marked as paid (%s)\n", args[0], paidAt.Format("2006-01-02"))
+			fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Invoice %s marked as paid (%s)", ui.Keyword.Render(args[0]), paidAt.Format("2006-01-02")))
 			return nil
 		},
 	}
@@ -1178,7 +1182,7 @@ func newInvoiceCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if err := invoice.RenderToFile(htmlPath, inv, proj, client, cfg.Issuer); err != nil {
+				if err := invoice.RenderToFile(htmlPath, inv, proj, client, cfg.Issuer, cfg.Locale); err != nil {
 					return err
 				}
 			}
@@ -1423,7 +1427,7 @@ func runInvoiceCreate(cmd *cobra.Command, preview bool) error {
 		tmpPath := tmpFile.Name()
 		tmpFile.Close()
 
-		if err := invoice.RenderToFile(tmpPath, inv, proj, client, cfg.Issuer); err != nil {
+		if err := invoice.RenderToFile(tmpPath, inv, proj, client, cfg.Issuer, cfg.Locale); err != nil {
 			return err
 		}
 		fmt.Printf("Preview: %s\n", tmpPath)
@@ -1431,7 +1435,7 @@ func runInvoiceCreate(cmd *cobra.Command, preview bool) error {
 	}
 
 	htmlPath := filepath.Join(paths.InvoiceDir, inv.Number+".html")
-	if err := invoice.RenderToFile(htmlPath, inv, proj, client, cfg.Issuer); err != nil {
+	if err := invoice.RenderToFile(htmlPath, inv, proj, client, cfg.Issuer, cfg.Locale); err != nil {
 		return err
 	}
 	if err := st.CreateInvoice(inv); err != nil {
@@ -1441,7 +1445,7 @@ func runInvoiceCreate(cmd *cobra.Command, preview bool) error {
 		return err
 	}
 
-	fmt.Printf("Invoice %s created (draft) — saved to %s\n", inv.Number, htmlPath)
+	fmt.Println(ui.Success.Render("✓") + fmt.Sprintf(" Invoice %s created (draft) — saved to %s", ui.Keyword.Render(inv.Number), htmlPath))
 	return nil
 }
 
@@ -1464,18 +1468,20 @@ func newDashboardCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("=== DASHBOARD  %s ===\n\n", now.Format("2006-01-02 15:04"))
+			fmt.Println(ui.SectionHeader("Dashboard") + "  " + ui.Muted.Render(now.Format("2006-01-02 15:04")))
+			fmt.Println()
 
 			if active != nil {
-				fmt.Printf("ACTIVE SESSION\n")
-				fmt.Printf("  %s  started %s  elapsed %.0fm\n\n",
-					active.ProjectID,
+				fmt.Println(ui.SectionHeader("Active Session"))
+				fmt.Printf("  %s %s  started %s  elapsed %.0fm\n\n",
+					ui.Success.Render("▶"),
+					ui.Keyword.Render(active.ProjectID),
 					active.Start.Format("15:04"),
 					active.Duration().Minutes(),
 				)
 			} else {
-				fmt.Println("No active session.")
-			fmt.Println()
+				fmt.Println(ui.Muted.Render("No active session."))
+				fmt.Println()
 			}
 
 			// Today's totals
@@ -1488,7 +1494,7 @@ func newDashboardCmd() *cobra.Command {
 			for _, s := range todaySessions {
 				todayHours += s.Hours()
 			}
-			fmt.Printf("TODAY  %.2fh across %d session(s)\n\n", todayHours, len(todaySessions))
+			fmt.Printf("%s  %s across %d session(s)\n\n", ui.SectionHeader("Today"), ui.Keyword.Render(fmt.Sprintf("%.2fh", todayHours)), len(todaySessions))
 
 			// This week's totals
 			weekday := int(now.Weekday())
@@ -1534,12 +1540,11 @@ func newDashboardCmd() *cobra.Command {
 				}
 			}
 
-			fmt.Printf("THIS WEEK  (%s — %s)\n", startOfWeek.Format("Mon 2006-01-02"), now.Format("Mon 2006-01-02"))
+			fmt.Println(ui.SectionHeader("This Week") + "  " + ui.Muted.Render(fmt.Sprintf("(%s — %s)", startOfWeek.Format("Mon 2006-01-02"), now.Format("Mon 2006-01-02"))))
 			if len(byProject) == 0 {
 				fmt.Println("  No sessions this week.")
 			} else {
-				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-				fmt.Fprintln(w, "  PROJECT\tCLIENT\tHOURS\tUNBILLED\tESTIMATED")
+				var rows [][]string
 				for projectID, ps := range byProject {
 					var estimated float64
 					if ps.billingType == model.BillingHourly {
@@ -1547,10 +1552,14 @@ func newDashboardCmd() *cobra.Command {
 					} else {
 						estimated = ps.fixedAmount
 					}
-					fmt.Fprintf(w, "  %s\t%s\t%.2fh\t%.2fh\t%.2f %s\n",
-						projectID, ps.clientID, ps.hours, ps.unbilledHours, estimated, string(ps.currency))
+					rows = append(rows, []string{
+						projectID, ps.clientID,
+						fmt.Sprintf("%.2fh", ps.hours),
+						fmt.Sprintf("%.2fh", ps.unbilledHours),
+						fmt.Sprintf("%.2f %s", estimated, string(ps.currency)),
+					})
 				}
-				w.Flush()
+				fmt.Println(ui.RenderTable([]string{"PROJECT", "CLIENT", "HOURS", "UNBILLED", "ESTIMATED"}, rows))
 			}
 			fmt.Println()
 
@@ -1559,25 +1568,27 @@ func newDashboardCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("OUTSTANDING INVOICES")
+			fmt.Println(ui.SectionHeader("Outstanding Invoices"))
 			if len(sentInvoices) == 0 {
 				fmt.Println("  None.")
 			} else {
-				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-				fmt.Fprintln(w, "  NUMBER\tCLIENT\tAMOUNT\tDUE\tSTATUS")
+				var rows [][]string
 				for _, inv := range sentInvoices {
-					status := "sent"
+					status := ui.StatusBadge("sent")
 					if !inv.DueAt.IsZero() && now.After(inv.DueAt) {
-						status = "OVERDUE"
+						status = ui.Error.Render("OVERDUE")
 					}
 					dueStr := ""
 					if !inv.DueAt.IsZero() {
 						dueStr = inv.DueAt.Format("2006-01-02")
 					}
-					fmt.Fprintf(w, "  %s\t%s\t%.2f %s\t%s\t%s\n",
-						inv.Number, inv.ClientID, inv.Total, string(inv.Currency), dueStr, status)
+					rows = append(rows, []string{
+						inv.Number, inv.ClientID,
+						fmt.Sprintf("%.2f %s", inv.Total, string(inv.Currency)),
+						dueStr, status,
+					})
 				}
-				w.Flush()
+				fmt.Println(ui.RenderTable([]string{"NUMBER", "CLIENT", "AMOUNT", "DUE", "STATUS"}, rows))
 			}
 
 			return nil

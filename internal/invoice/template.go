@@ -5,7 +5,7 @@ const invoiceTemplate = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Invoice {{ .Invoice.Number }}</title>
+<title>{{ .Locale.InvoiceLabel }} {{ .Invoice.Number }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -392,15 +392,15 @@ const invoiceTemplate = `<!DOCTYPE html>
       </div>
     </div>
     <div class="invoice-id-block">
-      <div class="invoice-label">Invoice</div>
+      <div class="invoice-label">{{ .Locale.InvoiceLabel }}</div>
       <div class="invoice-number">{{ .Invoice.Number }}</div>
       <div>
         {{ if eq (print .Invoice.Status) "paid" }}
-          <span class="invoice-status status-paid">● Paid</span>
+          <span class="invoice-status status-paid">&#x25cf; {{ .Locale.StatusPaid }}</span>
         {{ else if eq (print .Invoice.Status) "sent" }}
-          <span class="invoice-status status-sent">● Sent</span>
+          <span class="invoice-status status-sent">&#x25cf; {{ .Locale.StatusSent }}</span>
         {{ else }}
-          <span class="invoice-status status-draft">● Draft</span>
+          <span class="invoice-status status-draft">&#x25cf; {{ .Locale.StatusDraft }}</span>
         {{ end }}
       </div>
     </div>
@@ -409,7 +409,7 @@ const invoiceTemplate = `<!DOCTYPE html>
   <!-- Meta: Bill To + Dates -->
   <div class="meta-row">
     <div class="meta-group">
-      <div class="meta-label">Bill To</div>
+      <div class="meta-label">{{ .Locale.BillTo }}</div>
       <div class="meta-value">
         <strong>{{ .Client.Name }}</strong><br>
         {{ if .Client.Company }}{{ .Client.Company }}<br>{{ end }}
@@ -419,19 +419,19 @@ const invoiceTemplate = `<!DOCTYPE html>
       </div>
     </div>
     <div class="meta-group">
-      <div class="meta-label">Issued</div>
+      <div class="meta-label">{{ .Locale.Issued }}</div>
       <div class="meta-value">{{ .FormattedIssued }}</div>
       <br>
-      <div class="meta-label">Due Date</div>
+      <div class="meta-label">{{ .Locale.DueDate }}</div>
       <div class="meta-value"><strong>{{ .FormattedDue }}</strong></div>
     </div>
     <div class="meta-group">
       {{ if .FormattedPeriod }}
-      <div class="meta-label">Period</div>
+      <div class="meta-label">{{ .Locale.Period }}</div>
       <div class="meta-value">{{ .FormattedPeriod }}</div>
       <br>
       {{ end }}
-      <div class="meta-label">Currency</div>
+      <div class="meta-label">{{ .Locale.Currency }}</div>
       <div class="meta-value">{{ .Invoice.Currency }} ({{ .CurrSymbol }})</div>
     </div>
   </div>
@@ -440,7 +440,7 @@ const invoiceTemplate = `<!DOCTYPE html>
   <div class="project-banner">
     <span class="project-name">{{ .Project.Name }}</span>
     <span class="project-type">
-      {{ if isHourly }}⏱ Hourly{{ else }}📌 Fixed Price{{ end }}
+      {{ if isHourly }}&#x23f1; {{ .Locale.Hourly }}{{ else }}&#x1f4cc; {{ .Locale.FixedPrice }}{{ end }}
     </span>
   </div>
 
@@ -448,11 +448,11 @@ const invoiceTemplate = `<!DOCTYPE html>
   <table class="items-table">
     <thead>
       <tr>
-        {{ if isHourly }}<th>Date</th>{{ end }}
-        <th>Description</th>
-        {{ if isHourly }}<th class="num">Hours</th>{{ end }}
-        {{ if isHourly }}<th class="num">Rate</th>{{ end }}
-        <th class="num">Amount</th>
+        {{ if isHourly }}<th>{{ .Locale.Date }}</th>{{ end }}
+        <th>{{ .Locale.Description }}</th>
+        {{ if isHourly }}<th class="num">{{ .Locale.Hours }}</th>{{ end }}
+        {{ if isHourly }}<th class="num">{{ .Locale.Rate }}</th>{{ end }}
+        <th class="num">{{ .Locale.Amount }}</th>
       </tr>
     </thead>
     <tbody>
@@ -472,17 +472,17 @@ const invoiceTemplate = `<!DOCTYPE html>
   <div class="totals-section">
     <div class="totals-box">
       <div class="totals-row">
-        <span class="label">Subtotal</span>
+        <span class="label">{{ .Locale.Subtotal }}</span>
         <span class="value">{{ money .Invoice.Subtotal }}</span>
       </div>
       {{ if hasTax }}
       <div class="totals-row">
-        <span class="label">Tax ({{ taxPercent }})</span>
+        <span class="label">{{ .Locale.Tax }} ({{ taxPercent }})</span>
         <span class="value">{{ money .Invoice.Tax }}</span>
       </div>
       {{ end }}
       <div class="totals-row total-final">
-        <span class="label">Total Due</span>
+        <span class="label">{{ .Locale.TotalDue }}</span>
         <span class="value">{{ money .Invoice.Total }}</span>
       </div>
     </div>
@@ -491,7 +491,7 @@ const invoiceTemplate = `<!DOCTYPE html>
   <!-- Notes -->
   {{ if .Invoice.Notes }}
   <div class="notes-section">
-    <div class="notes-label">Notes</div>
+    <div class="notes-label">{{ .Locale.Notes }}</div>
     <p>{{ .Invoice.Notes }}</p>
   </div>
   {{ end }}
@@ -499,12 +499,12 @@ const invoiceTemplate = `<!DOCTYPE html>
   <!-- Footer -->
   <div class="footer">
     <div class="footer-left">
-      Thank you for your business.<br>
-      Payment is due by <strong>{{ .FormattedDue }}</strong>.
+      {{ .Locale.ThankYou }}<br>
+      {{ paymentDueMsg }}
     </div>
     <div class="footer-right">
       <div class="footer-brand">
-        generated with <span>tb</span> — time bill
+        {{ .Locale.GeneratedWith }} <span>tb</span> — time bill
       </div>
     </div>
   </div>

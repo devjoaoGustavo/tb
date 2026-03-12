@@ -7,21 +7,22 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/devjoaoGustavo/tb/internal/i18n"
 	"github.com/devjoaoGustavo/tb/internal/model"
 )
 
 // InvoiceData is the view model passed to the HTML template.
 type InvoiceData struct {
-	Issuer      model.Issuer
-	Client      model.Client
-	Project     model.Project
-	Invoice     model.Invoice
-	CurrSymbol  string
+	Issuer          model.Issuer
+	Client          model.Client
+	Project         model.Project
+	Invoice         model.Invoice
+	CurrSymbol      string
 	FormattedDue    string
 	FormattedIssued string
 	FormattedPeriod string
+	Locale          *i18n.Locale
 }
 
 // CurrencySymbol returns the display symbol for a currency code.
@@ -44,16 +45,35 @@ func FormatMoney(amount float64, symbol string) string {
 }
 
 // Render writes the invoice HTML to the provided writer.
-func Render(w io.Writer, inv model.Invoice, project model.Project, client model.Client, issuer model.Issuer) error {
+func Render(w io.Writer, inv model.Invoice, project model.Project, client model.Client, issuer model.Issuer, locale string) error {
+	loc := i18n.Get(locale)
+	sym := CurrencySymbol(inv.Currency)
+
+	data := InvoiceData{
+		Issuer:          issuer,
+		Client:          client,
+		Project:         project,
+		Invoice:         inv,
+		CurrSymbol:      sym,
+		FormattedDue:    i18n.FormatDate(inv.DueAt, loc.DateFormat),
+		FormattedIssued: i18n.FormatDate(inv.IssuedAt, loc.DateFormat),
+		Locale:          loc,
+	}
+
+	if !inv.PeriodStart.IsZero() && !inv.PeriodEnd.IsZero() {
+		data.FormattedPeriod = fmt.Sprintf("%s — %s",
+			i18n.FormatDate(inv.PeriodStart, loc.ShortDateFormat),
+			i18n.FormatDate(inv.PeriodEnd, loc.DateFormat))
+	}
+
 	funcMap := template.FuncMap{
 		"money": func(amount float64) string {
-			return FormatMoney(amount, CurrencySymbol(inv.Currency))
-		},
-		"fmtDate": func(t time.Time) string {
-			return t.Format("Jan 02, 2006")
+			return i18n.FormatMoney(amount, sym, loc)
 		},
 		"fmtHours": func(h float64) string {
-			return fmt.Sprintf("%.1fh", h)
+			intPart := int(h)
+			decPart := int((h - float64(intPart)) * 10)
+			return fmt.Sprintf("%d%s%dh", intPart, loc.DecimalSep, decPart)
 		},
 		"upper": strings.ToUpper,
 		"statusColor": func(s model.InvoiceStatus) string {
@@ -75,6 +95,13 @@ func Render(w io.Writer, inv model.Invoice, project model.Project, client model.
 		"taxPercent": func() string {
 			return fmt.Sprintf("%.0f%%", inv.TaxRate*100)
 		},
+		"loc": func() *i18n.Locale {
+			return loc
+		},
+		"paymentDueMsg": func() template.HTML {
+			msg := fmt.Sprintf(loc.PaymentDueBy, "<strong>"+data.FormattedDue+"</strong>")
+			return template.HTML(msg)
+		},
 	}
 
 	tmpl, err := template.New("invoice").Funcs(funcMap).Parse(invoiceTemplate)
@@ -82,27 +109,11 @@ func Render(w io.Writer, inv model.Invoice, project model.Project, client model.
 		return fmt.Errorf("parsing template: %w", err)
 	}
 
-	data := InvoiceData{
-		Issuer:          issuer,
-		Client:          client,
-		Project:         project,
-		Invoice:         inv,
-		CurrSymbol:      CurrencySymbol(inv.Currency),
-		FormattedDue:    inv.DueAt.Format("January 02, 2006"),
-		FormattedIssued: inv.IssuedAt.Format("January 02, 2006"),
-	}
-
-	if !inv.PeriodStart.IsZero() && !inv.PeriodEnd.IsZero() {
-		data.FormattedPeriod = fmt.Sprintf("%s — %s",
-			inv.PeriodStart.Format("Jan 02"),
-			inv.PeriodEnd.Format("Jan 02, 2006"))
-	}
-
 	return tmpl.Execute(w, data)
 }
 
 // RenderToFile renders the invoice HTML to the file at path, creating parent directories as needed.
-func RenderToFile(path string, inv model.Invoice, project model.Project, client model.Client, issuer model.Issuer) error {
+func RenderToFile(path string, inv model.Invoice, project model.Project, client model.Client, issuer model.Issuer, locale string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
@@ -111,5 +122,5 @@ func RenderToFile(path string, inv model.Invoice, project model.Project, client 
 		return err
 	}
 	defer f.Close()
-	return Render(f, inv, project, client, issuer)
+	return Render(f, inv, project, client, issuer, locale)
 }

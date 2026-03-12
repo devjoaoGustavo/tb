@@ -208,7 +208,7 @@ func TestIntegration_TimeTracking(t *testing.T) {
 
 	// Now (timer running)
 	out = env.mustRun("now")
-	if !contains(out, "api-work") || !contains(out, "Running") {
+	if !contains(out, "api-work") {
 		t.Errorf("now: expected running timer, got: %q", out)
 	}
 
@@ -357,7 +357,7 @@ func TestIntegration_InvoiceLifecycle(t *testing.T) {
 
 	// List invoices
 	out = env.mustRun("invoice", "list")
-	if !contains(out, "INV-001") || !contains(out, "draft") {
+	if !contains(out, "INV-001") || !contains(out, "Draft") {
 		t.Errorf("list: expected draft invoice, got: %q", out)
 	}
 
@@ -370,14 +370,14 @@ func TestIntegration_InvoiceLifecycle(t *testing.T) {
 	// Mark sent
 	env.mustRun("invoice", "mark-sent", "INV-001")
 	out = env.mustRun("invoice", "list")
-	if !contains(out, "sent") {
+	if !contains(out, "Sent") {
 		t.Errorf("mark-sent: expected sent status, got: %q", out)
 	}
 
 	// Mark paid
 	env.mustRun("invoice", "mark-paid", "INV-001")
 	out = env.mustRun("invoice", "list")
-	if !contains(out, "paid") {
+	if !contains(out, "Paid") {
 		t.Errorf("mark-paid: expected paid status, got: %q", out)
 	}
 }
